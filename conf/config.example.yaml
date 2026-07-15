@@ -1,0 +1,74 @@
+# ============================================================================
+# Billing Total-Consumption Pipeline — unified config
+# Consolidates total_consumption_paginated.sh (fetch) + output/dashboard.config.json
+# (dashboard build) into one file. Values reflect the 2026-04-14 → 2026-05-14 pull
+# (8,309 executions across 84 pages).
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# API fetch — source: total_consumption_paginated.sh
+# ----------------------------------------------------------------------------
+api:
+  base_url: ""
+  # Secret: do NOT hardcode. Export AIRIA_API_KEY in the local env / settings.local.json.
+  api_key_env: "AIRIA_API_KEY"
+  auth_header: "X-API-Key"
+
+query:
+  user_email: ""            # filter by user email (blank = all)
+  agent_name: ""            # filter by agent name (blank = all)
+  model_name: ""            # filter by model name (blank = all)
+  start_date: "2026-04-14T00:00:00Z"
+  end_date: "2026-05-15T00:00:00Z"
+  page_size: 100            # smaller = more reliable cursor pagination
+  include_total_count: true
+  descending: true
+
+output:
+  dir: "./output"
+  # File pattern: billing_totalconsumption_<YYYYMMDD_HHMMSS>.json
+
+# ----------------------------------------------------------------------------
+# Dashboard build — source: output/dashboard.config.json + generate_dashboard.py
+# ----------------------------------------------------------------------------
+dashboard:
+  input: "billing_totalconsumption_20260624_105909.json"
+  output: "billing_dashboard.html"
+  template: "dashboard_template.html"
+
+  branding:
+    title: "Consumption Dashboard"
+    subtitle: "Model cost and token analytics"
+    logo_text: "C"
+
+  options:
+    include_image_charges: true
+    attribute_image_cost_to_model: false
+    top_models_stacked: 8
+    top_models_bar: 12
+    top_pipelines: 15
+    top_users: 15
+
+  # Field mappings — map raw Airia export keys to dashboard fields.
+  # All keys below match the actual export schema confirmed from the pull.
+  fields:
+    items_path: "items"
+    created_at: "createdAt"
+    input_tokens: "inputTokens"
+    output_tokens: "outputTokens"
+    total_cost: "totalCost"
+    success: "success"
+    pipeline_name: "pipelineName"
+    project_id: "projectId"
+    user_name: "userName"
+    execution_source_type: "executionSourceType"
+    additional_charges: "additionalCharges"
+    steps: "steps"
+    step:
+      model_display_name: "modelDisplayName"
+      model_name: "modelName"
+      provider: "provider"
+      input_tokens: "inputTokens"
+      output_tokens: "outputTokens"
+      tokens_cost: "tokensCost"
+      model_call_duration: "modelCallDuration"

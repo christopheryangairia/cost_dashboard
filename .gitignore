@@ -1,0 +1,8 @@
+.env
+total_consumption_paginated.sh
+output/
+conf/config.yaml
+get_billing_details_paginated.sh
+src/__pycache__/dashboard_core.cpython-313.pyc
+.DS_Store
+src/__pycache__/dashboard_core.cpython-313.pyc

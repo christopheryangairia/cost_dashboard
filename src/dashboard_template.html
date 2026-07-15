@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0c14; --panel:#14162200; --card:#171a2b; --card2:#1e2236;
+    --ink:#e8eaf5; --muted:#9aa0bd; --line:#262a42;
+    --brand:#7c5cff; --brand2:#22d3ee; --accent:#34d399; --warn:#fbbf24; --bad:#fb7185;
+    --grid:#222640;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1a1d33 0%,var(--bg) 55%);
+       color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;}
+  header{padding:22px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;
+         gap:16px;flex-wrap:wrap;background:rgba(12,13,22,.7);position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));
+        display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:18px}
+  h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .spacer{flex:1}
+  .rng{color:var(--muted);font-size:12.5px;text-align:right}
+  .rng b{color:var(--ink)}
+  main{padding:22px 28px 60px;max-width:1500px;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+       border-radius:14px;padding:15px 16px;position:relative;overflow:hidden}
+  .kpi .lbl{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px}
+  .kpi .val{font-size:25px;font-weight:750;margin-top:6px;letter-spacing:.3px}
+  .kpi .hint{color:var(--muted);font-size:11.5px;margin-top:3px}
+  .kpi.big .val{background:linear-gradient(90deg,var(--brand2),var(--brand));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .grid{display:grid;gap:16px}
+  .row2{grid-template-columns:1.6fr 1fr}
+  .row2b{grid-template-columns:1fr 1fr}
+  .row3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:1050px){.row2,.row2b,.row3{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+         border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .panel h2{font-size:14px;margin:0 0 2px;font-weight:700}
+  .panel .ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .panel .ph small{color:var(--muted);font-size:12px}
+  .chartbox{position:relative;height:300px}
+  .chartbox.sm{height:260px}
+  .chartbox.lg{height:340px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;
+     cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card2)}
+  th.sortable:hover{color:var(--ink)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:hover{background:rgba(124,92,255,.07)}
+  .bar{height:6px;border-radius:4px;background:linear-gradient(90deg,var(--brand),var(--brand2));display:inline-block;vertical-align:middle;margin-right:8px}
+  .pill{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.ok{background:rgba(52,211,153,.15);color:var(--accent)}
+  .pill.bad{background:rgba(251,113,133,.15);color:var(--bad)}
+  .pill.na{background:rgba(154,160,189,.15);color:var(--muted)}
+  .exid{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--muted)}
+  .scroll{max-height:460px;overflow:auto;border-radius:10px;border:1px solid var(--line)}
+  .ctrls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  input[type=search],select{background:var(--card);border:1px solid var(--line);color:var(--ink);
+        border-radius:9px;padding:8px 11px;font-size:13px;outline:none}
+  input[type=search]{min-width:240px}
+  input[type=search]:focus,select:focus{border-color:var(--brand)}
+  .tag{color:var(--muted);font-size:12px}
+  .legendnote{color:var(--muted);font-size:11.5px;margin-top:8px}
+  .pgr{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;color:var(--muted);font-size:12.5px}
+  .pgr button{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer}
+  .pgr button:disabled{opacity:.4;cursor:default}
+  .foot{color:var(--muted);font-size:11.5px;margin-top:24px;text-align:center}
+  code{background:var(--card);padding:1px 6px;border-radius:6px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">__LOGO__</div>
+  <div>
+    <h1>__TITLE__</h1>
+    <div class="sub">__SUBTITLE__</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="rng" id="rangeNote"></div>
+</header>
+
+<main>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid row2">
+    <div class="panel">
+      <div class="ph"><div><h2>Spend over time</h2><small>Daily cost, stacked by top models</small></div>
+        <small id="tsToggle" style="cursor:pointer;color:var(--brand2)">▾ switch to tokens</small></div>
+      <div class="chartbox lg"><canvas id="tsChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div><h2>Cost composition</h2><small>Where the money goes</small></div></div>
+      <div class="chartbox lg"><canvas id="compChart"></canvas></div>
+      <div class="legendnote" id="compNote"></div>
+    </div>
+  </div>
+
+  <div class="grid row2">
+    <div class="panel">
+      <div class="ph"><div><h2>Cost by model</h2><small>Token cost per model (top <span data-topn="modelbar"></span>)</small></div></div>
+      <div class="chartbox lg"><canvas id="modelCostChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div><h2>Cost by provider</h2><small>OpenAI · Google · Anthropic</small></div></div>
+      <div class="chartbox lg"><canvas id="provChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><div><h2>Tokens by model</h2><small>Input vs output tokens (top <span data-topn="modelbar"></span> by total tokens)</small></div></div>
+    <div class="chartbox lg"><canvas id="tokModelChart"></canvas></div>
+  </div>
+
+  <div class="grid row2b">
+    <div class="panel">
+      <div class="ph"><div><h2>Top pipelines by cost</h2><small>top <span data-topn="pipe"></span> of <span id="pipeCount"></span></small></div></div>
+      <div class="chartbox lg"><canvas id="pipeChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div><h2>Top users by cost</h2><small>top <span data-topn="user"></span> of <span id="userCount"></span></small></div></div>
+      <div class="chartbox lg"><canvas id="userChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><div><h2>Models</h2><small>cost &amp; token aggregate by model — click headers to sort</small></div></div>
+    <div class="ctrls">
+      <input type="search" id="mq" placeholder="Search models or providers…">
+      <select id="mprov"><option value="">All providers</option></select>
+      <span class="tag" id="modelStat"></span>
+    </div>
+    <div class="scroll"><table id="modelTable"></table></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><div><h2>Pipeline breakdown</h2><small>all pipelines — click headers to sort</small></div></div>
+    <div class="scroll"><table id="pipeTable"></table></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><div><h2>Execution detail</h2><small><span id="detailCount"></span> executions — filter &amp; sort</small></div></div>
+    <div class="ctrls">
+      <input type="search" id="q" placeholder="Search id / pipeline / model / user…">
+      <select id="fsrc"><option value="">All sources</option></select>
+      <select id="fok"><option value="">All statuses</option><option value="ok">Success</option><option value="bad">Failed</option></select>
+      <select id="fprov"><option value="">All providers</option></select>
+      <select id="fmodel"><option value="">All models</option></select>
+      <span class="tag" id="detailStat"></span>
+    </div>
+    <div class="scroll"><table id="detailTable"></table></div>
+    <div class="pgr">
+      <button id="prev">‹ Prev</button><span id="pageInfo"></span><button id="next">Next ›</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    Generated <span id="genDate"></span> from <code id="srcName"></code> ·
+    Cost = sum of per-step token cost + image/additional charges. Top-level <code>totalCost</code> is sparsely populated and not used.
+  </div>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const fmtUSD = n => '$'+(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtUSD4 = n => '$'+(n||0).toLocaleString(undefined,{minimumFractionDigits:n<1?4:2,maximumFractionDigits:4});
+const fmtN = n => (n||0).toLocaleString();
+const fmtTok = n => n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n||0);
+const PALETTE=['#7c5cff','#22d3ee','#34d399','#fbbf24','#fb7185','#a78bfa','#38bdf8','#f472b6','#4ade80','#fb923c','#60a5fa','#c084fc','#2dd4bf'];
+
+Chart.defaults.color='#9aa0bd';
+Chart.defaults.font.family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,sans-serif';
+Chart.defaults.borderColor='#222640';
+
+/* ---------- KPIs ---------- */
+const k=D.kpis;
+const successRate = (k.success/k.execs*100);
+const kpiDefs=[
+  {lbl:'Total Cost',val:fmtUSD(k.grandCost),hint:'token + image charges',big:true},
+  {lbl:'Token Cost',val:fmtUSD(k.tokenCost),hint:((k.tokenCost/k.grandCost*100)|0)+'% of spend'},
+  {lbl:'Image Charges',val:fmtUSD(k.imageCost),hint:((k.imageCost/k.grandCost*100).toFixed(1))+'% of spend'},
+  {lbl:'Total Tokens',val:fmtTok(k.totalTokens),hint:fmtN(k.totalTokens)},
+  {lbl:'Input Tokens',val:fmtTok(k.totalIn),hint:fmtN(k.totalIn)},
+  {lbl:'Output Tokens',val:fmtTok(k.totalOut),hint:fmtN(k.totalOut)},
+  {lbl:'Executions',val:fmtN(k.execs),hint:successRate.toFixed(1)+'% success · '+k.fail+' failed'},
+  {lbl:'Avg Cost / Exec',val:fmtUSD4(k.avgCostPerExec),hint:'per execution'},
+  {lbl:'Pipelines',val:fmtN(k.pipelines),hint:k.models+' models · '+k.projects+' projects'},
+  {lbl:'Users',val:fmtN(k.users),hint:'active in period'},
+];
+document.getElementById('kpis').innerHTML=kpiDefs.map(d=>
+  `<div class="kpi ${d.big?'big':''}"><div class="lbl">${d.lbl}</div><div class="val">${d.val}</div><div class="hint">${d.hint}</div></div>`).join('');
+document.getElementById('rangeNote').innerHTML=`Period<br><b>${D.meta.dateMin}</b> → <b>${D.meta.dateMax}</b>`;
+document.getElementById('genDate').textContent=D.meta.generated;
+document.getElementById('srcName').textContent=D.meta.source;
+
+/* ---------- Time series (stacked cost / tokens toggle) ---------- */
+const days=D.stacked.days;
+let tsMode='cost';
+const tsCtx=document.getElementById('tsChart');
+let tsChart;
+function buildTS(){
+  let datasets;
+  if(tsMode==='cost'){
+    datasets=D.stacked.series.map((s,i)=>({label:s.name,data:s.data,
+      backgroundColor:PALETTE[i%PALETTE.length],borderWidth:0,stack:'c'}));
+  }else{
+    const inD=days.map(d=>{const r=D.timeseries.find(t=>t.day===d);return r?r.inTok:0;});
+    const outD=days.map(d=>{const r=D.timeseries.find(t=>t.day===d);return r?r.outTok:0;});
+    datasets=[{label:'Input tokens',data:inD,backgroundColor:'#7c5cff',stack:'t'},
+              {label:'Output tokens',data:outD,backgroundColor:'#22d3ee',stack:'t'}];
+  }
+  if(tsChart)tsChart.destroy();
+  tsChart=new Chart(tsCtx,{type:'bar',data:{labels:days,datasets},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${tsMode==='cost'?fmtUSD4(c.parsed.y):fmtN(c.parsed.y)+' tok'}`}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:0,autoSkip:true,font:{size:10}}},
+        y:{stacked:true,grid:{color:'#1c2036'},ticks:{callback:v=>tsMode==='cost'?'$'+v:fmtTok(v)}}}}});
+}
+buildTS();
+document.getElementById('tsToggle').onclick=function(){
+  tsMode=tsMode==='cost'?'tokens':'cost';
+  this.textContent=tsMode==='cost'?'▾ switch to tokens':'▾ switch to cost';
+  buildTS();
+};
+
+/* ---------- Cost composition (token vs image, + by source) ---------- */
+new Chart(document.getElementById('compChart'),{type:'doughnut',
+  data:{labels:['Token cost','Image charges'],datasets:[{data:[k.tokenCost,k.imageCost],
+    backgroundColor:['#7c5cff','#22d3ee'],borderColor:'#171a2b',borderWidth:2}]},
+  options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom'},
+    tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtUSD(c.parsed)} (${(c.parsed/k.grandCost*100).toFixed(1)}%)`}}}}});
+document.getElementById('compNote').innerHTML='Source split — '+
+  D.sources.map(s=>`<b style="color:var(--ink)">${s.name}</b> ${fmtUSD(s.cost)} (${(s.cost/k.grandCost*100).toFixed(0)}%)`).join(' · ');
+
+/* ---------- Cost by model (top N) ---------- */
+const tm=D.models.slice(0,D.options.topModelsBar);
+new Chart(document.getElementById('modelCostChart'),{type:'bar',
+  data:{labels:tm.map(m=>m.name),datasets:[{data:tm.map(m=>m.cost),
+    backgroundColor:tm.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:4}]},
+  options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:c=>` ${fmtUSD(c.parsed.x)} · ${(c.parsed.x/k.tokenCost*100).toFixed(1)}% of token cost`}}},
+    scales:{x:{grid:{color:'#1c2036'},ticks:{callback:v=>'$'+v}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+
+/* ---------- Cost by provider ---------- */
+new Chart(document.getElementById('provChart'),{type:'doughnut',
+  data:{labels:D.providers.map(p=>p.name),datasets:[{data:D.providers.map(p=>p.cost),
+    backgroundColor:PALETTE,borderColor:'#171a2b',borderWidth:2}]},
+  options:{maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom'},
+    tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtUSD(c.parsed)} (${(c.parsed/k.tokenCost*100).toFixed(1)}%)`}}}}});
+
+/* ---------- Tokens by model (input vs output, top 12 by tokens) ---------- */
+const tmt=[...D.models].sort((a,b)=>(b.inTok+b.outTok)-(a.inTok+a.outTok)).slice(0,D.options.topModelsBar);
+new Chart(document.getElementById('tokModelChart'),{type:'bar',
+  data:{labels:tmt.map(m=>m.name),datasets:[
+    {label:'Input',data:tmt.map(m=>m.inTok),backgroundColor:'#7c5cff',stack:'s'},
+    {label:'Output',data:tmt.map(m=>m.outTok),backgroundColor:'#22d3ee',stack:'s'}]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtN(c.parsed.y)} tok`}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},maxRotation:40,minRotation:0}},
+      y:{stacked:true,grid:{color:'#1c2036'},ticks:{callback:v=>fmtTok(v)}}}}});
+
+/* ---------- Top pipelines / users ---------- */
+function hbar(canvasId,rows,labelKey,valKey,denom){
+  new Chart(document.getElementById(canvasId),{type:'bar',
+    data:{labels:rows.map(r=>r[labelKey]),datasets:[{data:rows.map(r=>r[valKey]),
+      backgroundColor:rows.map((_,i)=>PALETTE[i%PALETTE.length]),borderRadius:4}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${fmtUSD(c.parsed.x)} · ${(c.parsed.x/denom*100).toFixed(1)}%`}}},
+      scales:{x:{grid:{color:'#1c2036'},ticks:{callback:v=>'$'+v}},
+        y:{grid:{display:false},ticks:{font:{size:10},callback:function(v){const l=this.getLabelForValue(v);return l.length>34?l.slice(0,33)+'…':l;}}}}}});
+}
+hbar('pipeChart',D.pipelines.slice(0,D.options.topPipelines),'name','cost',k.grandCost);
+hbar('userChart',D.users.slice(0,D.options.topUsers),'name','cost',k.grandCost);
+document.getElementById('pipeCount').textContent=D.pipelines.length;
+document.getElementById('userCount').textContent=D.users.length;
+document.querySelectorAll('[data-topn=pipe]').forEach(e=>e.textContent=D.options.topPipelines);
+document.querySelectorAll('[data-topn=user]').forEach(e=>e.textContent=D.options.topUsers);
+document.querySelectorAll('[data-topn=modelbar]').forEach(e=>e.textContent=D.options.topModelsBar);
+
+/* ---------- Sortable tables ---------- */
+function makeTable(elId,cols,rows,initSort){
+  const el=document.getElementById(elId);
+  let sortKey=initSort.key, sortDir=initSort.dir;
+  function render(){
+    const sorted=[...rows].sort((a,b)=>{
+      const x=a[sortKey],y=b[sortKey];
+      const r=(typeof x==='number')?(x-y):String(x).localeCompare(String(y));
+      return sortDir==='asc'?r:-r;
+    });
+    const max={};cols.forEach(c=>{if(c.bar)max[c.key]=Math.max(...rows.map(r=>r[c.key]||0));});
+    el.innerHTML='<thead><tr>'+cols.map(c=>
+      `<th class="sortable ${c.num?'num':''}" data-k="${c.key}">${c.lbl}${sortKey===c.key?(sortDir==='asc'?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
+      sorted.map(r=>'<tr>'+cols.map(c=>{
+        let v=r[c.key];
+        if(c.fmt)v=c.fmt(r[c.key],r);
+        if(c.bar){const w=max[c.key]?Math.round((r[c.key]||0)/max[c.key]*60):0;
+          return `<td class="num"><span class="bar" style="width:${w}px"></span>${v}</td>`;}
+        return `<td class="${c.num?'num':''}">${v}</td>`;
+      }).join('')+'</tr>').join('')+'</tbody>';
+    el.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+      const kk=th.dataset.k;
+      if(kk===sortKey)sortDir=sortDir==='asc'?'desc':'asc';else{sortKey=kk;sortDir=(typeof rows[0][kk]==='number')?'desc':'asc';}
+      render();
+    });
+  }
+  render();
+}
+
+/* ---------- Models table (search + provider filter + sortable) ---------- */
+(function(){
+  const rows=D.models;
+  const mq=document.getElementById('mq'), mprov=document.getElementById('mprov');
+  [...new Set(rows.map(r=>r.provider))].filter(Boolean).sort().forEach(p=>mprov.add(new Option(p,p)));
+  const cols=[
+    {key:'name',lbl:'Model'},
+    {key:'provider',lbl:'Provider'},
+    {key:'cost',lbl:'Total Cost',num:true,bar:true,fmt:v=>fmtUSD(v)},
+    {key:'execs',lbl:'Total Executions',num:true,fmt:v=>fmtN(v)},
+    {key:'inTok',lbl:'Input Tokens',num:true,fmt:v=>fmtN(v)},
+    {key:'outTok',lbl:'Output Tokens',num:true,fmt:v=>fmtN(v)},
+  ];
+  const tab=document.getElementById('modelTable');
+  let sk='cost', sd='desc';
+  function filt(){
+    const term=mq.value.trim().toLowerCase(), p=mprov.value;
+    let r=rows.filter(m=>{
+      if(p && m.provider!==p) return false;
+      if(term && !((m.name||'').toLowerCase().includes(term)||(m.provider||'').toLowerCase().includes(term))) return false;
+      return true;
+    });
+    r.sort((a,b)=>{const x=a[sk],y=b[sk];const c=(typeof x==='number')?(x-y):String(x).localeCompare(String(y));return sd==='asc'?c:-c;});
+    return r;
+  }
+  function render(){
+    const r=filt();
+    const max=Math.max(1,...r.map(x=>x.cost||0));
+    const sumCost=r.reduce((s,x)=>s+(x.cost||0),0), sumEx=r.reduce((s,x)=>s+(x.execs||0),0),
+          sumIn=r.reduce((s,x)=>s+(x.inTok||0),0), sumOut=r.reduce((s,x)=>s+(x.outTok||0),0);
+    document.getElementById('modelStat').textContent=
+      `${r.length} models · ${fmtUSD(sumCost)} · ${fmtN(sumEx)} execs · ${fmtN(sumIn)} in / ${fmtN(sumOut)} out tokens`;
+    tab.innerHTML='<thead><tr>'+cols.map(c=>`<th class="sortable ${c.num?'num':''}" data-k="${c.key}">${c.lbl}${sk===c.key?(sd==='asc'?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
+      r.map(row=>'<tr>'+cols.map(c=>{
+        let v=c.fmt?c.fmt(row[c.key],row):row[c.key];
+        if(c.bar){const w=Math.round((row[c.key]||0)/max*60);return `<td class="num"><span class="bar" style="width:${w}px"></span>${v}</td>`;}
+        return `<td class="${c.num?'num':''}">${v}</td>`;
+      }).join('')+'</tr>').join('')+'</tbody>';
+    tab.querySelectorAll('th').forEach(th=>th.onclick=()=>{const kk=th.dataset.k;
+      if(kk===sk)sd=sd==='asc'?'desc':'asc';else{sk=kk;sd=(typeof rows[0][kk]==='number')?'desc':'asc';}render();});
+  }
+  [mq,mprov].forEach(e=>e.addEventListener('input',render));
+  render();
+})();
+
+makeTable('pipeTable',[
+  {key:'name',lbl:'Pipeline'},
+  {key:'cost',lbl:'Total cost',num:true,bar:true,fmt:v=>fmtUSD(v)},
+  {key:'tokenCost',lbl:'Token cost',num:true,fmt:v=>fmtUSD(v)},
+  {key:'imageCost',lbl:'Image',num:true,fmt:v=>v>0?fmtUSD(v):'—'},
+  {key:'execs',lbl:'Execs',num:true,fmt:v=>fmtN(v)},
+  {key:'fail',lbl:'Failed',num:true,fmt:v=>v||0},
+  {key:'inTok',lbl:'Input tok',num:true,fmt:v=>fmtN(v)},
+  {key:'outTok',lbl:'Output tok',num:true,fmt:v=>fmtN(v)},
+  {key:'avg',lbl:'Avg/exec',num:true,fmt:(_,r)=>fmtUSD4(r.cost/r.execs)},
+], D.pipelines.map(p=>({...p,avg:0})), {key:'cost',dir:'desc'});
+
+/* ---------- Execution detail table (filter + sort + paginate) ---------- */
+const detail=D.detail;
+const PAGE=50;
+let page=0,sortK='cost',sortD='desc';
+const q=document.getElementById('q'),fsrc=document.getElementById('fsrc'),
+      fok=document.getElementById('fok'),fmodel=document.getElementById('fmodel'),
+      fprov=document.getElementById('fprov');
+[...new Set(detail.map(d=>d.src))].sort().forEach(s=>fsrc.add(new Option(s,s)));
+[...new Set(detail.map(d=>d.prov))].filter(Boolean).sort().forEach(p=>fprov.add(new Option(p,p)));
+[...new Set(detail.map(d=>d.model))].sort().forEach(m=>fmodel.add(new Option(m,m)));
+document.getElementById('detailCount').textContent=fmtN(detail.length);
+
+function filtered(){
+  const term=q.value.trim().toLowerCase(),src=fsrc.value,ok=fok.value,mdl=fmodel.value,prov=fprov.value;
+  let rows=detail.filter(d=>{
+    if(src&&d.src!==src)return false;
+    if(mdl&&d.model!==mdl)return false;
+    if(prov&&d.prov!==prov)return false;
+    if(ok==='ok'&&d.ok!==true)return false;
+    if(ok==='bad'&&d.ok!==false)return false;
+    if(term&&!(d.pipe.toLowerCase().includes(term)||d.model.toLowerCase().includes(term)||d.user.toLowerCase().includes(term)||(d.id&&d.id.toLowerCase().includes(term))))return false;
+    return true;
+  });
+  rows.sort((a,b)=>{const x=a[sortK],y=b[sortK];const r=(typeof x==='number')?(x-y):String(x).localeCompare(String(y));return sortD==='asc'?r:-r;});
+  return rows;
+}
+const dcols=[
+  {key:'id',lbl:'Execution ID',fmt:v=>`<span class="exid">${v||'—'}</span>`},
+  {key:'t',lbl:'Time'},{key:'pipe',lbl:'Pipeline'},{key:'model',lbl:'Primary model'},
+  {key:'prov',lbl:'Provider'},
+  {key:'src',lbl:'Source'},{key:'in',lbl:'In',num:true,fmt:fmtN},{key:'out',lbl:'Out',num:true,fmt:fmtN},
+  {key:'cost',lbl:'Cost',num:true,fmt:v=>fmtUSD4(v)},{key:'ok',lbl:'Status',
+    fmt:v=>v===true?'<span class="pill ok">ok</span>':v===false?'<span class="pill bad">fail</span>':'<span class="pill na">n/a</span>'},
+  {key:'user',lbl:'User'}];
+const dtab=document.getElementById('detailTable');
+function renderDetail(){
+  const rows=filtered();
+  const pages=Math.max(1,Math.ceil(rows.length/PAGE));
+  if(page>=pages)page=pages-1;
+  const slice=rows.slice(page*PAGE,page*PAGE+PAGE);
+  const sumCost=rows.reduce((s,r)=>s+r.cost,0);
+  document.getElementById('detailStat').textContent=`${fmtN(rows.length)} rows · ${fmtUSD(sumCost)} total`;
+  dtab.innerHTML='<thead><tr>'+dcols.map(c=>`<th class="sortable ${c.num?'num':''}" data-k="${c.key}">${c.lbl}${sortK===c.key?(sortD==='asc'?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
+    slice.map(r=>'<tr>'+dcols.map(c=>{let v=c.fmt?c.fmt(r[c.key]):r[c.key];return `<td class="${c.num?'num':''}">${v}</td>`;}).join('')+'</tr>').join('')+'</tbody>';
+  dtab.querySelectorAll('th').forEach(th=>th.onclick=()=>{const kk=th.dataset.k;
+    if(kk===sortK)sortD=sortD==='asc'?'desc':'asc';else{sortK=kk;sortD=(typeof detail[0][kk]==='number')?'desc':'asc';}renderDetail();});
+  document.getElementById('pageInfo').textContent=`Page ${page+1} / ${pages}`;
+  document.getElementById('prev').disabled=page<=0;
+  document.getElementById('next').disabled=page>=pages-1;
+}
+[q,fsrc,fok,fmodel,fprov].forEach(e=>e.addEventListener('input',()=>{page=0;renderDetail();}));
+document.getElementById('prev').onclick=()=>{if(page>0){page--;renderDetail();}};
+document.getElementById('next').onclick=()=>{page++;renderDetail();};
+renderDetail();
+</script>
+</body>
+</html>

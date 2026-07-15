@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billing Consumption — Fetch &amp; Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0c14; --card:#171a2b; --card2:#1e2236; --ink:#e8eaf5; --muted:#9aa0bd;
+    --line:#262a42; --brand:#7c5cff; --brand2:#22d3ee; --accent:#34d399;
+    --warn:#fbbf24; --bad:#fb7185;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1a1d33 0%,var(--bg) 55%);
+       color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;}
+  header{padding:18px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));
+        display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+  h1{font-size:17px;margin:0;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px}
+  main{max-width:1400px;margin:0 auto;padding:22px 26px 60px;display:grid;gap:18px;
+       grid-template-columns:380px 1fr}
+  @media(max-width:960px){main{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+         border-radius:14px;padding:18px}
+  .panel h2{font-size:13px;margin:0 0 14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+  input,select{width:100%;background:#0e1020;border:1px solid var(--line);color:var(--ink);
+        border-radius:9px;padding:9px 11px;font-size:13px;outline:none}
+  input:focus,select:focus{border-color:var(--brand)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  details{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+  summary{cursor:pointer;font-size:12px;color:var(--brand2);font-weight:600;user-select:none}
+  button{margin-top:18px;width:100%;background:linear-gradient(135deg,var(--brand),var(--brand2));
+         color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;margin-left:6px}
+  .badge.ok{background:rgba(52,211,153,.15);color:var(--accent)}
+  .badge.no{background:rgba(251,191,36,.15);color:var(--warn)}
+  .log{background:#070810;border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+       font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;height:230px;overflow:auto;white-space:pre-wrap;margin:0}
+  .log .l-page{color:var(--ink)}
+  .log .l-ok{color:var(--accent)}
+  .log .l-info{color:var(--brand2)}
+  .log .l-err{color:var(--bad);font-weight:700}
+  .log .l-dim{color:var(--muted)}
+  .kpibar{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-size:13px}
+  .kpibar b{font-size:18px;display:block}
+  .kpibar .m{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .actions{display:flex;gap:10px;margin:14px 0 0}
+  .actions a{flex:0 0 auto;text-decoration:none;background:var(--card);border:1px solid var(--line);
+        color:var(--ink);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600}
+  .actions a:hover{border-color:var(--brand)}
+  .frame-wrap{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#07081a}
+  iframe{width:100%;height:760px;border:0;display:block;background:#0b0c14}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:60px 20px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);
+        border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">A</div>
+  <div>
+    <h1>Billing Consumption — Fetch &amp; Dashboard</h1>
+    <div class="sub">Pull total-consumption data and build a cost dashboard · local tool</div>
+  </div>
+</header>
+
+<main>
+  <!-- ---------------- form ---------------- -->
+  <section class="panel" id="formPanel">
+    <h2>Query</h2>
+    <label>Base URL</label>
+    <input id="base_url" placeholder="https://…/v1/BillingExecutions/totalconsumption">
+
+    <label>API Key <span id="keyBadge"></span></label>
+    <input id="api_key" type="password" placeholder="blank → use .env / config key">
+    <div class="hint" id="keyHint"></div>
+
+    <label>Start date</label>
+    <input id="start_date" type="datetime-local">
+
+    <label>End date</label>
+    <input id="end_date" type="datetime-local">
+
+    <label>Page size</label>
+    <input id="page_size" type="number" min="1" max="1000" value="100">
+    <div class="hint">Items per page when fetching (smaller = more reliable pagination).</div>
+
+    <button id="runBtn">Fetch &amp; Build Dashboard</button>
+  </section>
+
+  <!-- ---------------- results ---------------- -->
+  <section class="panel" id="resultPanel">
+    <h2>Progress</h2>
+    <pre class="log" id="log"><span class="l-dim">Ready. Set your range and click “Fetch &amp; Build Dashboard”.</span></pre>
+
+    <div class="kpibar" id="kpibar" style="display:none"></div>
+    <div class="actions" id="actions" style="display:none"></div>
+
+    <div class="frame-wrap" id="frameWrap"><div class="empty" id="empty">The dashboard will appear here once data is loaded.</div></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+function logLine(text, cls){
+  const span = document.createElement('span');
+  span.className = cls || 'l-dim';
+  span.textContent = text + "\n";
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog(){ logEl.innerHTML = ''; }
+
+const fmtUSD = n => '$'+(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN   = n => (n||0).toLocaleString();
+const fmtTok = n => n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n||0);
+
+// datetime-local wants 'YYYY-MM-DDTHH:MM'
+function toLocalInput(iso){
+  if(!iso) return '';
+  const m = String(iso).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? `${m[1]}T${m[2]}` : '';
+}
+
+// ---- prefill from config ----
+fetch('/api/defaults').then(r=>r.json()).then(d=>{
+  $('base_url').value = d.base_url || '';
+  $('start_date').value = toLocalInput(d.start_date);
+  $('end_date').value   = toLocalInput(d.end_date);
+  $('page_size').value  = d.page_size || 100;
+  const badge = $('keyBadge'), hint = $('keyHint');
+  if(d.has_default_key){
+    badge.className='badge ok'; badge.textContent='default key found';
+    hint.textContent = `Leave blank to use ${d.key_source}.`;
+  }else{
+    badge.className='badge no'; badge.textContent='no default key';
+    hint.textContent = `No ${d.key_source} in env/.env — enter a key above.`;
+  }
+}).catch(e=>logLine('Could not load defaults: '+e, 'l-err'));
+
+// ---- run ----
+const btn = $('runBtn');
+btn.addEventListener('click', run);
+
+async function run(){
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Fetching…';
+  clearLog();
+  $('kpibar').style.display='none';
+  $('actions').style.display='none';
+  $('frameWrap').innerHTML = '<div class="empty">Fetching data…</div>';
+
+  const body = {
+    base_url:   $('base_url').value.trim(),
+    api_key:    $('api_key').value,
+    start_date: $('start_date').value,
+    end_date:   $('end_date').value,
+    page_size:  $('page_size').value,
+  };
+
+  try{
+    const resp = await fetch('/api/run', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    if(!resp.ok && !resp.body){ throw new Error('HTTP '+resp.status); }
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while(true){
+      const {value, done} = await reader.read();
+      if(done) break;
+      buf += dec.decode(value, {stream:true});
+      let nl;
+      while((nl = buf.indexOf('\n')) >= 0){
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl+1);
+        if(line) handleEvent(JSON.parse(line));
+      }
+    }
+    if(buf.trim()) handleEvent(JSON.parse(buf.trim()));
+  }catch(e){
+    logLine('✗ '+e.message, 'l-err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Fetch & Build Dashboard';
+  }
+}
+
+function handleEvent(ev){
+  switch(ev.type){
+    case 'start':
+      logLine(`▶ Fetching ${ev.start_date} → ${ev.end_date}  (page size ${ev.page_size})`, 'l-info');
+      logLine(`   ${ev.base_url}`, 'l-dim');
+      break;
+    case 'page':
+      logLine(`📄 page ${ev.page}: +${ev.items} items  (${ev.collected} / ${ev.total||'?'})`
+              + (ev.hasCursor?'':'  — last page'), 'l-page');
+      break;
+    case 'fetched':
+      logLine(`✅ fetched ${fmtN(ev.items)} items across ${ev.pages} pages`, 'l-ok');
+      break;
+    case 'saved':
+      logLine(`💾 saved ${ev.json}`, 'l-dim');
+      break;
+    case 'building':
+      logLine('📊 building dashboard…', 'l-info');
+      break;
+    case 'done':
+      logLine('✓ done.', 'l-ok');
+      showResult(ev);
+      break;
+    case 'error':
+      logLine('✗ '+ev.message, 'l-err');
+      $('frameWrap').innerHTML = '<div class="empty">No dashboard — see the error above.</div>';
+      break;
+  }
+}
+
+function showResult(ev){
+  const k = ev.kpis || {};
+  const bar = $('kpibar');
+  bar.innerHTML = [
+    ['Total cost', fmtUSD(k.grandCost)],
+    ['Tokens', fmtTok(k.totalTokens)],
+    ['Executions', fmtN(k.execs)],
+    ['Models', fmtN(k.models)],
+    ['Pipelines', fmtN(k.pipelines)],
+    ['Period', (ev.meta&&ev.meta.dateMin)+' → '+(ev.meta&&ev.meta.dateMax)],
+  ].map(([m,v])=>`<div><span class="m">${m}</span><b>${v}</b></div>`).join('');
+  bar.style.display='flex';
+
+  const act = $('actions');
+  act.innerHTML = `<a href="${ev.dashboard}" target="_blank">↗ Open in new tab</a>
+                   <a href="${ev.dashboard}" download>⬇ Download HTML</a>
+                   <a href="${ev.json}" download>⬇ Download JSON</a>`;
+  act.style.display='flex';
+
+  $('frameWrap').innerHTML = `<iframe src="${ev.dashboard}" title="dashboard"></iframe>`;
+}
+</script>
+</body>
+</html>
