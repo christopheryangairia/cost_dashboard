@@ -265,7 +265,14 @@ def aggregate(items, fields, options):
     attr_img = options["attributeImageCostToModel"]
 
     def num(x):
-        return x if isinstance(x, (int, float)) else 0
+        if isinstance(x, (int, float)):
+            return x
+        if isinstance(x, str):
+            try:
+                return float(x)
+            except ValueError:
+                return 0
+        return 0
 
     def exec_image_cost(it):
         ac = it.get(fields["additionalCharges"]) or {}
@@ -289,7 +296,12 @@ def aggregate(items, fields, options):
     detail, dates = [], []
 
     for it in items:
-        steps = it.get(fields["steps"]) or []
+        # Some API responses nest per-model calls in a `steps` list; others
+        # (e.g. the flat /totalconsumption export) report one model per
+        # execution with no nested list at all. Fall back to treating the
+        # execution itself as a single synthetic step in that case.
+        raw_steps = it.get(fields["steps"])
+        steps = raw_steps if isinstance(raw_steps, list) else [it]
         tcost = sum(num(s.get(sf["tokensCost"])) for s in steps)
         icost = exec_image_cost(it) if include_img else 0.0
         cost = tcost + icost
