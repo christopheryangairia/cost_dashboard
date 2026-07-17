@@ -207,6 +207,8 @@ def fetch_all(base_url, api_key, query, progress=None, timeout=120, max_pages=10
             "X-API-Key": api_key,
             "Content-Type": "application/json",
             "x-correlation-id": correlation_id,
+            "User-Agent": "Mozilla/5.0 (compatible; cost-dashboard/1.0)",
+            "Accept": "application/json",
         })
         try:
             with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
